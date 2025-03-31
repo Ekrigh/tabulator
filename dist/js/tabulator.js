@@ -8319,7 +8319,7 @@
 			var style = window.getComputedStyle(this.element);
 			
 			switch(this.options.textDirection){
-				case"auto":
+				case "auto":
 					if(style.direction !== "rtl"){
 						break;
 					}
@@ -8460,6 +8460,7 @@
 			//clear DOM
 			while(element.firstChild) element.removeChild(element.firstChild);
 			element.classList.remove("tabulator");
+			element.removeAttribute("tabulator-layout");
 
 			this.externalEvents.dispatch("tableDestroyed");
 		}
@@ -14098,6 +14099,7 @@
 			
 			this.registerComponentFunction("cell", "isEdited", this.cellIsEdited.bind(this));
 			this.registerComponentFunction("cell", "clearEdited", this.clearEdited.bind(this));
+			this.registerComponentFunction("cell", "setEdited", this.setEdited.bind(this));
 			this.registerComponentFunction("cell", "edit", this.editCell.bind(this));
 			this.registerComponentFunction("cell", "cancelEdit", this.cellCancelEdit.bind(this));
 			
@@ -14221,6 +14223,16 @@
 			
 			cells.forEach((cell) => {
 				this.table.modules.edit.clearEdited(cell._getSelf());
+			});
+		}
+
+		setCellEdited(cells){
+			if(!Array.isArray(cells)){
+				cells = [cells];
+			}
+
+			cells.forEach((cell) => {
+				this.table.modules.edit.setEdited(cell._getSelf());
 			});
 		}
 		
@@ -14865,6 +14877,22 @@
 			
 			if(editIndex > -1){
 				this.editedCells.splice(editIndex, 1);
+			}
+		}
+
+		setEdited(cell){
+			var editIndex;
+
+			if(cell.modules.edit && cell.modules.edit.edited){
+				cell.modules.edit.edited = true;
+
+				this.dispatch("edit-success", cell);
+			}
+
+			editIndex = this.editedCells.indexOf(cell);
+
+			if(editIndex === -1){
+				this.editedCells.push(cell);
 			}
 		}
 	}
@@ -26063,8 +26091,8 @@
 			this.right = 0;
 			
 			this.table = table;
-			this.start = {row:0, col:0};
-			this.end = {row:0, col:0};
+			this.start = {row:undefined, col:undefined};
+			this.end = {row:undefined, col:undefined};
 
 			if(this.rangeManager.rowHeader){
 				this.left = 1;
@@ -26995,13 +27023,15 @@
 		///////////////////////////////////
 		
 		keyNavigate(dir, e){
-			if(this.navigate(false, false, dir));
-			e.preventDefault();
+			if(this.navigate(false, false, dir)){
+				e.preventDefault();
+			}
 		}
 		
 		keyNavigateRange(e, dir, jump, expand){
-			if(this.navigate(jump, expand, dir));
-			e.preventDefault();
+			if(this.navigate(jump, expand, dir)){
+				e.preventDefault();
+			}
 		}
 		
 		navigate(jump, expand, dir) {
@@ -27119,9 +27149,8 @@
 				}
 
 				this.layoutElement();
-				
-				return true;
 			}
+			return true;
 		}
 		
 		rangeRemoved(removed){
@@ -27135,7 +27164,7 @@
 				}
 			}
 			
-			this.layoutElement();
+			this.layoutElement(true);
 		}
 		
 		findJumpRow(column, rows, reverse, emptyStart, emptySide){
@@ -27277,11 +27306,11 @@
 			}
 			
 			if (event.shiftKey) {
-				this.activeRange.setBounds(false, element);
+				this.activeRange.setBounds(false, element, true);
 			} else if (event.ctrlKey) {
-				this.addRange().setBounds(element);
+				this.addRange().setBounds(element, undefined, true);
 			} else {
-				this.resetRanges().setBounds(element);
+				this.resetRanges().setBounds(element, undefined, true);
 			}
 		}
 		
@@ -29621,9 +29650,7 @@
 		}
 	}
 
-	var TabulatorFull$1 = TabulatorFull;
-
-	return TabulatorFull$1;
+	return TabulatorFull;
 
 }));
 //# sourceMappingURL=tabulator.js.map
